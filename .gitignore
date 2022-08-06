@@ -26,3 +26,6 @@ artifacts
 # vim
 *.sw[a-z]
 .vscode/settings.json
+
+
+.DS_Store

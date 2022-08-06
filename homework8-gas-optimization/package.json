@@ -3,6 +3,7 @@
   "scripts": {
     "lint": "solhint -f table \"contracts/{*,**/*}.sol\"",
     "format": "prettier --ignore-path .gitignore --write \"{*,**/*}.{ts,js,json,md,sol}\"",
+    "generate": "sol2uml storage ./contracts/ -c GasContract -o gasStorage.svg",
     "compile": "hardhat compile",
     "test": "hardhat test"
   },

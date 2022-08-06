@@ -13,10 +13,10 @@ contract GasContract {
     struct Payment {
         PaymentType paymentType;
         bool adminUpdated;
-        uint256 paymentId;
-        uint256 amount;
         address recipient;
         address admin; // administrators address
+        uint256 paymentId;
+        uint256 amount;
         string recipientName; // max 8 characters
     }
 
@@ -24,8 +24,8 @@ contract GasContract {
     address public immutable contractOwner;
     address[5] public administrators;
     mapping(address => uint256) public balances;
-    mapping(address => Payment[]) public payments;
     mapping(address => uint256) public whitelist;
+    mapping(address => Payment[]) public payments;
 
     event Transfer(address recipient, uint256 amount);
 

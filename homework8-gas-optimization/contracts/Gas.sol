@@ -15,9 +15,9 @@ contract GasContract {
         bool adminUpdated;
         address recipient;
         address admin; // administrators address
+        bytes8 recipientName; // max 8 characters
         uint256 paymentId;
         uint256 amount;
-        string recipientName; // max 8 characters
     }
 
     uint256 public immutable totalSupply; // cannot be updated
@@ -56,7 +56,8 @@ contract GasContract {
     ) public {
         uint256 balanceSender = balances[msg.sender];
         require(balanceSender >= _amount, "insufficient Balance");
-        require(bytes(_name).length < 9, "invalid name");
+        bytes calldata bytesName = bytes(_name);
+        require(bytesName.length < 9, "invalid name");
 
         uint256 balanceRecipient = balances[_recipient];
         balances[msg.sender] = balanceSender - _amount;
@@ -68,7 +69,7 @@ contract GasContract {
                 paymentType: PaymentType.BasicPayment,
                 recipient: _recipient,
                 amount: _amount,
-                recipientName: _name,
+                recipientName: bytes8(bytesName),
                 paymentId: paymentsLength + 1,
                 adminUpdated: false,
                 admin: address(0)

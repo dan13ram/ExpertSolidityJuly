@@ -1,6 +1,7 @@
 {
   "name": "hardhat-project",
   "scripts": {
+    "compile": "hardhat compile",
     "test": "hardhat test"
   },
   "devDependencies": {

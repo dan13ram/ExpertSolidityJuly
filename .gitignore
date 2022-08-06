@@ -1,0 +1,28 @@
+node_modules
+.env*
+
+# yarn 
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+*.log
+package-lock.json
+
+# testing
+coverage
+lib-cov
+coverage.json
+
+# typescript
+types
+dist
+
+# hardhat
+cache
+artifacts
+
+# vim
+*.sw[a-z]
+.vscode/settings.json

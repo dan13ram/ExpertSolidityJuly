@@ -71,6 +71,9 @@ describe('Gas1', function () {
 
     expect(Payments.length).to.equal(5);
     expect(Payments[0].amount).to.equal(302);
+    expect(Payments[0].admin).to.equal(owner.address);
+    expect(Payments[0].adminUpdated).to.equal(true);
+
     expect(Payments[0].paymentType).to.equal(3);
   });
 
@@ -150,10 +153,10 @@ describe('Gas1', function () {
       addrArray1.push(wallet.address);
     }
 
-    let tx0 = await gasContract.addToWhitelist(addr1.address, 1);
+    let tx0 = await gasContract.addToWhitelist_0n2(addr1.address, 1);
     await tx0.wait();
     addrArray1.forEach(async element => {
-      let tx1 = await gasContract.addToWhitelist(element, 1);
+      let tx1 = await gasContract.addToWhitelist_0n2(element, 1);
       await tx1.wait();
     });
 
@@ -163,7 +166,7 @@ describe('Gas1', function () {
     }
     addrArray2.push(addr2.address);
     addrArray2.forEach(async element => {
-      let tx2 = await gasContract.addToWhitelist(element, 2);
+      let tx2 = await gasContract.addToWhitelist_0n2(element, 2);
       await tx2.wait();
     });
     for (let i = 0; i < 299; i++) {
@@ -172,7 +175,7 @@ describe('Gas1', function () {
     }
     addrArray3.push(addr3.address);
     addrArray3.forEach(async element => {
-      let tx3 = await gasContract.addToWhitelist(element, 3);
+      let tx3 = await gasContract.addToWhitelist_0n2(element, 3);
       await tx3.wait();
     });
   }

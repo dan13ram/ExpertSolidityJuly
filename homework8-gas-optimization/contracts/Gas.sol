@@ -8,7 +8,6 @@ error InvalidParams();
 
 contract GasContract {
     enum PaymentType {
-        Unknown,
         BasicPayment,
         Refund,
         Dividend,
@@ -18,8 +17,8 @@ contract GasContract {
     struct Payment {
         PaymentType paymentType;
         bool adminUpdated;
-        address recipient;
         address admin; // administrators address
+        address recipient;
         bytes8 recipientName; // max 8 characters
         uint256 paymentId;
         uint256 amount;
@@ -28,9 +27,9 @@ contract GasContract {
     uint256 public immutable totalSupply; // cannot be updated
     address public immutable contractOwner;
     address[5] public administrators;
-    mapping(address => uint256) public balances;
     mapping(address => uint256) public whitelist;
-    mapping(address => Payment[]) public payments;
+    mapping(address => uint256) private balances;
+    mapping(address => Payment[]) private payments;
 
     event Transfer(address recipient, uint256 amount);
 
@@ -82,13 +81,13 @@ contract GasContract {
 
         Payment storage payment = payments[_user][_id - 1];
 
-        payment.adminUpdated = true;
-        payment.admin = _user;
-        payment.paymentType = _type;
-        payment.amount = _amount;
+        assembly {
+            sstore(payment.slot, add(shl(16, _user), add(0x0100, _type)))
+            sstore(add(payment.slot, 3), _amount)
+        }
     }
 
-    function addToWhitelist(address _user, uint256 _tier) external {
+    function addToWhitelist_0n2(address _user, uint256 _tier) external {
         _onlyAdminOrOwner();
         if (_tier == 0 || _tier > 4) revert InvalidParams();
         whitelist[_user] = _tier;

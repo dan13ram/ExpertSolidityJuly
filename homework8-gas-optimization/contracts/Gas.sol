@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.15;
 
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+
 error NotOwnerOrAdmin();
 error NotWhitelisted();
 error InsufficientBalance();
@@ -27,7 +29,7 @@ contract GasContract {
     uint256 public immutable totalSupply; // cannot be updated
     address public immutable contractOwner;
     address[5] public administrators;
-    mapping(address => uint256) public whitelist;
+    bytes32 public merkleRoot;
     mapping(address => uint256) private balances;
     mapping(address => Payment[]) private payments;
 
@@ -81,27 +83,33 @@ contract GasContract {
 
         Payment storage payment = payments[_user][_id - 1];
 
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             sstore(payment.slot, add(shl(16, _user), add(0x0100, _type)))
             sstore(add(payment.slot, 3), _amount)
         }
     }
 
-    function addToWhitelist_0n2(address _user, uint256 _tier) external {
+    function updateRoot(bytes32 _root) external {
         _onlyAdminOrOwner();
-        if (_tier == 0 || _tier > 4) revert InvalidParams();
-        whitelist[_user] = _tier;
+        if (_root == bytes32(0)) revert InvalidParams();
+        merkleRoot = _root;
     }
 
-    function whiteTransfer(address _recipient, uint256 _amount) external {
+    function whiteTransfer(
+        address _recipient,
+        uint256 _amount,
+        uint256 _tier,
+        bytes32[] calldata _merkleProof
+    ) external {
         uint256 balanceSender = balances[msg.sender];
         uint256 balanceRecipient = balances[_recipient];
-        uint256 tierSender = whitelist[msg.sender];
         if (_amount < 4) revert InvalidParams();
         if (balanceSender < _amount) revert InsufficientBalance();
-        if (tierSender == 0) revert NotWhitelisted();
-        balances[msg.sender] = balanceSender - _amount + tierSender;
-        balances[_recipient] = balanceRecipient + _amount - tierSender;
+        if (!verifyClaim(msg.sender, _tier, _merkleProof))
+            revert NotWhitelisted();
+        balances[msg.sender] = balanceSender - _amount + _tier;
+        balances[_recipient] = balanceRecipient + _amount - _tier;
     }
 
     function balanceOf(address _user) external view returns (uint256 balance) {
@@ -120,14 +128,23 @@ contract GasContract {
         mode = true;
     }
 
+    function verifyClaim(
+        address _user,
+        uint256 _tier,
+        bytes32[] calldata _merkleProof
+    ) public view returns (bool valid) {
+        bytes32 leaf = keccak256(abi.encodePacked(_user, _tier));
+        valid = MerkleProof.verify(_merkleProof, merkleRoot, leaf);
+    }
+
     function _onlyAdminOrOwner() internal view {
         if (contractOwner == msg.sender) return;
         for (uint256 i = 0; i < administrators.length; ) {
-            unchecked {
-                ++i;
-            }
             if (administrators[i] == msg.sender) {
                 return;
+            }
+            unchecked {
+                ++i;
             }
         }
         revert NotOwnerOrAdmin();

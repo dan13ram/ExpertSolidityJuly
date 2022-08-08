@@ -1,5 +1,6 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
+const { getSnapshot } = require('./tree');
 
 describe('Gas1', function () {
   let gasContract;
@@ -96,16 +97,28 @@ describe('Gas1', function () {
 
   //CAN BE adjusted to a level
   it('Add users to whitelist and validate key users are added with correct tier', async function () {
-    await addToWhitelist();
-    let whitelistAddr1 = await gasContract.whitelist(addr1.address);
-    expect(parseInt(whitelistAddr1)).to.equal(1);
-    let whitelistAddr2 = await gasContract.whitelist(addr2.address);
-    expect(parseInt(whitelistAddr2)).to.equal(2);
-    let whitelistAddr3 = await gasContract.whitelist(addr3.address);
-    expect(parseInt(whitelistAddr3)).to.equal(3);
+    const snapshot = await addToWhitelist();
+    let whitelistValid1 = await gasContract.verifyClaim(
+      addr1.address,
+      1,
+      snapshot.getMerkleProof(addr1.address, 1),
+    );
+    expect(whitelistValid1).to.equal(true);
+    let whitelistValid2 = await gasContract.verifyClaim(
+      addr2.address,
+      2,
+      snapshot.getMerkleProof(addr2.address, 2),
+    );
+    expect(whitelistValid2).to.equal(true);
+    let whitelistValid3 = await gasContract.verifyClaim(
+      addr3.address,
+      3,
+      snapshot.getMerkleProof(addr3.address, 3),
+    );
+    expect(whitelistValid3).to.equal(true);
   });
   it('Whitelist transfer works', async function () {
-    await addToWhitelist();
+    const snapshot = await addToWhitelist();
     const transferTx1 = await gasContract.transfer(addr1.address, 500, 'acc1');
     await transferTx1.wait();
     const transferTx2 = await gasContract.transfer(addr2.address, 300, 'acc2');
@@ -120,15 +133,30 @@ describe('Gas1', function () {
     let sendValue3 = 50;
     const whiteTransferTx1 = await gasContract
       .connect(addr1)
-      .whiteTransfer(recipient1.address, sendValue1);
+      .whiteTransfer(
+        recipient1.address,
+        sendValue1,
+        1,
+        snapshot.getMerkleProof(addr1.address, 1),
+      );
     await whiteTransferTx1.wait();
     const whiteTransferTx2 = await gasContract
       .connect(addr2)
-      .whiteTransfer(recipient2.address, sendValue2);
+      .whiteTransfer(
+        recipient2.address,
+        sendValue2,
+        2,
+        snapshot.getMerkleProof(addr2.address, 2),
+      );
     await whiteTransferTx2.wait();
     const whiteTransferTx3 = await gasContract
       .connect(addr3)
-      .whiteTransfer(recipient3.address, sendValue3);
+      .whiteTransfer(
+        recipient3.address,
+        sendValue3,
+        3,
+        snapshot.getMerkleProof(addr3.address, 3),
+      );
     await whiteTransferTx3.wait();
     let rec1Balance = await gasContract.balanceOf(recipient1.address);
     let rec2Balance = await gasContract.balanceOf(recipient2.address);
@@ -145,38 +173,37 @@ describe('Gas1', function () {
   });
 
   async function addToWhitelist() {
-    let addrArray1 = [];
-    let addrArray2 = [];
-    let addrArray3 = [];
+    let whitelistAddresses = [];
+    let tiers = [];
     for (let i = 0; i < 99; i++) {
       let wallet = ethers.Wallet.createRandom();
-      addrArray1.push(wallet.address);
+      whitelistAddresses.push(wallet.address);
+      tiers.push(1);
     }
 
-    let tx0 = await gasContract.addToWhitelist_0n2(addr1.address, 1);
-    await tx0.wait();
-    addrArray1.forEach(async element => {
-      let tx1 = await gasContract.addToWhitelist_0n2(element, 1);
-      await tx1.wait();
-    });
+    whitelistAddresses.push(addr1.address);
+    tiers.push(1);
 
     for (let i = 0; i < 199; i++) {
       let wallet = ethers.Wallet.createRandom();
-      addrArray2.push(wallet.address);
+      whitelistAddresses.push(wallet.address);
+      tiers.push(2);
     }
-    addrArray2.push(addr2.address);
-    addrArray2.forEach(async element => {
-      let tx2 = await gasContract.addToWhitelist_0n2(element, 2);
-      await tx2.wait();
-    });
+    whitelistAddresses.push(addr2.address);
+    tiers.push(2);
     for (let i = 0; i < 299; i++) {
       let wallet = ethers.Wallet.createRandom();
-      addrArray3.push(wallet.address);
+      whitelistAddresses.push(wallet.address);
+      tiers.push(3);
     }
-    addrArray3.push(addr3.address);
-    addrArray3.forEach(async element => {
-      let tx3 = await gasContract.addToWhitelist_0n2(element, 3);
-      await tx3.wait();
-    });
+    whitelistAddresses.push(addr3.address);
+    tiers.push(3);
+
+    const snapshot = getSnapshot(whitelistAddresses, tiers);
+    const root = snapshot.getMerkleRoot();
+    let tx = await gasContract.updateRoot(root);
+    await tx.wait();
+
+    return snapshot;
   }
 });

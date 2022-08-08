@@ -6021,7 +6021,7 @@ merkle-patricia-tree@^4.2.4:
     readable-stream "^3.6.0"
     semaphore-async-await "^1.5.1"
 
-merkletreejs@^0.2.31:
+merkletreejs@^0.2.32:
   version "0.2.32"
   resolved "https://registry.yarnpkg.com/merkletreejs/-/merkletreejs-0.2.32.tgz#cf1c0760e2904e4a1cc269108d6009459fd06223"
   integrity sha512-TostQBiwYRIwSE5++jGmacu3ODcKAgqb0Y/pnIohXS7sWxh1gCkSptbmF1a43faehRDpcHf7J/kv0Ml2D/zblQ==
@@ -7837,10 +7837,10 @@ snapdragon@^0.8.1:
     source-map-resolve "^0.5.0"
     use "^3.1.0"
 
-sol2uml@^2.1.2:
-  version "2.1.3"
-  resolved "https://registry.yarnpkg.com/sol2uml/-/sol2uml-2.1.3.tgz#0c246ef8fd4694671e7e9cd22c648b5eaf069f5c"
-  integrity sha512-RgD6vJM3dGVFXGIwYGGbfQaLLRhS6z5FYbIfd5k8khDnSpM/cKtKR1IkEsqllrKDV8pdfeCncuPGR9WoZnbrrw==
+sol2uml@^2.1.4:
+  version "2.1.4"
+  resolved "https://registry.yarnpkg.com/sol2uml/-/sol2uml-2.1.4.tgz#a422e7ec54e99d012ea38811faf285e7be2d5111"
+  integrity sha512-m94h2sJ6KZJSCD6mNo13MzkTcm2M+4vi4RJeByHPQok34mIrmPfbvFNDVhDVN6ZBbZVaPv6+DkE17sbyu7W56A==
   dependencies:
     "@aduh95/viz.js" "^3.7.0"
     "@solidity-parser/parser" "^0.14.3"

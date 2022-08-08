@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.15;
 
+error NotOwnerOrAdmin();
+error NotWhitelisted();
+error InsufficientBalance();
+error InvalidParams();
+
 contract GasContract {
     enum PaymentType {
         Unknown,
@@ -29,20 +34,6 @@ contract GasContract {
 
     event Transfer(address recipient, uint256 amount);
 
-    modifier onlyAdminOrOwner() {
-        require(
-            contractOwner == msg.sender || _checkForAdmin(msg.sender),
-            "not owner or admin"
-        );
-        _;
-    }
-
-    modifier onlyWhiteListed() {
-        uint256 usersTier = whitelist[msg.sender];
-        require(usersTier > 0 && usersTier < 4, "not whitelisted");
-        _;
-    }
-
     constructor(address[5] memory _admins, uint256 _totalSupply) {
         contractOwner = msg.sender;
         administrators = _admins;
@@ -53,13 +44,13 @@ contract GasContract {
         address _recipient,
         uint256 _amount,
         string calldata _name
-    ) public {
-        uint256 balanceSender = balances[msg.sender];
-        require(balanceSender >= _amount, "insufficient Balance");
+    ) external {
         bytes calldata bytesName = bytes(_name);
-        require(bytesName.length < 9, "invalid name");
-
+        uint256 balanceSender = balances[msg.sender];
         uint256 balanceRecipient = balances[_recipient];
+        if (bytesName.length > 8) revert InvalidParams();
+        if (balanceSender < _amount) revert InsufficientBalance();
+
         balances[msg.sender] = balanceSender - _amount;
         balances[_recipient] = balanceRecipient + _amount;
 
@@ -84,10 +75,10 @@ contract GasContract {
         uint256 _id,
         uint256 _amount,
         PaymentType _type
-    ) public onlyAdminOrOwner {
-        require(_id > 0, "invalid id");
-        require(_amount > 0, "invalid amount");
-        require(_user != address(0), "zero address");
+    ) external {
+        _onlyAdminOrOwner();
+        if (_id == 0 || _amount == 0 || _user == address(0))
+            revert InvalidParams();
 
         Payment storage payment = payments[_user][_id - 1];
 
@@ -97,49 +88,49 @@ contract GasContract {
         payment.amount = _amount;
     }
 
-    function addToWhitelist(address _userAddrs, uint256 _tier)
-        public
-        onlyAdminOrOwner
-    {
-        require(_tier < 4 && _tier > 0, "invalid tier");
-        whitelist[_userAddrs] = _tier;
+    function addToWhitelist(address _user, uint256 _tier) external {
+        _onlyAdminOrOwner();
+        if (_tier == 0 || _tier > 4) revert InvalidParams();
+        whitelist[_user] = _tier;
     }
 
-    function whiteTransfer(address _recipient, uint256 _amount)
-        public
-        onlyWhiteListed
-    {
+    function whiteTransfer(address _recipient, uint256 _amount) external {
         uint256 balanceSender = balances[msg.sender];
-        require(balanceSender >= _amount, "insufficient balance");
-        require(_amount > 3, "amount too low");
         uint256 balanceRecipient = balances[_recipient];
         uint256 tierSender = whitelist[msg.sender];
+        if (_amount < 4) revert InvalidParams();
+        if (balanceSender < _amount) revert InsufficientBalance();
+        if (tierSender == 0) revert NotWhitelisted();
         balances[msg.sender] = balanceSender - _amount + tierSender;
         balances[_recipient] = balanceRecipient + _amount - tierSender;
     }
 
-    function balanceOf(address _user) public view returns (uint256 balance) {
+    function balanceOf(address _user) external view returns (uint256 balance) {
         balance = balances[_user];
     }
 
     function getPayments(address _user)
-        public
+        external
         view
         returns (Payment[] memory userPayments)
     {
         userPayments = payments[_user];
     }
 
-    function getTradingMode() public pure returns (bool mode) {
+    function getTradingMode() external pure returns (bool mode) {
         mode = true;
     }
 
-    function _checkForAdmin(address _user) internal view returns (bool admin) {
-        for (uint256 i = 0; i < administrators.length; i++) {
-            if (administrators[i] == _user) {
-                admin = true;
-                break;
+    function _onlyAdminOrOwner() internal view {
+        if (contractOwner == msg.sender) return;
+        for (uint256 i = 0; i < administrators.length; ) {
+            unchecked {
+                ++i;
+            }
+            if (administrators[i] == msg.sender) {
+                return;
             }
         }
+        revert NotOwnerOrAdmin();
     }
 }
